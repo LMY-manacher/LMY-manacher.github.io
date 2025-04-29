@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>采集</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    input, button { margin: 5px; padding: 10px 15px; font-size: 16px; }
+    #status { margin-top: 20px; }
+    #dataBox { margin-top: 15px; font-size: 18px; }
+  </style>
+</head>
+<body>
+  <h1>采集</h1>
+
+  <label for="usrId">用户ID：</label>
+  <input type="text" id="usrId" placeholder="用户ID"><br>
+  <label for="deviceId">设备编号：</label>
+  <input type="text" id="deviceId" placeholder="设备编号"><br>
+
+  <button id="startBtn">开始采集</button>
+  <button id="stopBtn">停止采集</button>
+
+  <div id="status">状态：待采集</div>
+  <div id="dataBox">X: - / Y: - / Z: -</div>
+
+  <script>
+    let sensorData = [];
+    let isCollecting = false;
+    let deviceMotionHandler = null;
+
+    const usrIdInput = document.getElementById("usrId");
+    const deviceIdInput = document.getElementById("deviceId");
+    const startBtn = document.getElementById("startBtn");
+    const stopBtn = document.getElementById("stopBtn");
+    const statusDiv = document.getElementById("status");
+    const dataBox = document.getElementById("dataBox");
+
+    // iOS 授权（仅在 iOS 上生效）
+    async function requestMotionPermission() {
+      if (typeof DeviceMotionEvent !== "undefined" && typeof DeviceMotionEvent.requestPermission === "function") {
+        try {
+          const response = await DeviceMotionEvent.requestPermission();
+          if (response !== "granted") {
+            alert("请授权访问加速度数据，否则无法采集");
+            return false;
+          }
+        } catch (error) {
+          alert("请求加速度权限失败：" + error);
+          return false;
+        }
+      }
+      return true;
+    }
+
+    function startCollecting() {
+      const usrId = usrIdInput.value.trim();
+      const deviceId = deviceIdInput.value.trim();
+
+      if (!usrId || !deviceId) {
+        alert("请填写用户ID和设备编号！");
+        return;
+      }
+
+      requestMotionPermission().then(granted => {
+        if (!granted) return;
+
+        if (typeof DeviceMotionEvent === "undefined") {
+          alert("当前浏览器不支持 DeviceMotionEvent");
+          return;
+        }
+
+        sensorData = [];
+        isCollecting = true;
+        statusDiv.textContent = "状态：正在采集...";
+
+        deviceMotionHandler = function(event) {
+          const acc = event.accelerationIncludingGravity || event.acceleration;
+          const timestamp = Date.now();
+          if (acc) {
+            sensorData.push({ time: timestamp, x: acc.x, y: acc.y, z: acc.z });
+            dataBox.textContent = `X: ${acc.x.toFixed(2)} / Y: ${acc.y.toFixed(2)} / Z: ${acc.z.toFixed(2)}`;
+          }
+        };
+
+        window.addEventListener("devicemotion", deviceMotionHandler);
+      });
+    }
+
+    function stopAndUpload() {
+      const usrId = usrIdInput.value.trim();
+      const deviceId = deviceIdInput.value.trim();
+
+      if (!isCollecting) {
+        alert("请先点击‘开始采集’按钮采集数据！");
+        return;
+      }
+
+      window.removeEventListener("devicemotion", deviceMotionHandler);
+      isCollecting = false;
+      statusDiv.textContent = "状态：采集停止，正在上传...";
+      dataBox.textContent = "X: - / Y: - / Z: -";
+
+      let csvContent = "time,x,y,z\n";
+      sensorData.forEach(item => {
+        csvContent += `${item.time},${item.x},${item.y},${item.z}\n`;
+      });
+
+      const encodedCSV = btoa(csvContent);
+      const payload = {
+        ReqInfo: {
+          usrId: usrId,
+          deviceId: deviceId,
+          mag: {
+            data: encodedCSV,
+            sequence: JSON.stringify([1, 2, 3])
+          },
+          reqTime: new Date().toISOString()
+        }
+      };
+
+      const payloadStr = JSON.stringify(payload);
+      const encodedPayload = btoa(payloadStr);
+
+      fetch("http://10.69.255.65:9999/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Data-Type": "device_example"
+        },
+        body: encodedPayload
+      })
+      .then(response => response.text())
+      .then(data => {
+        const decodedResponse = atob(data);
+        statusDiv.textContent = "状态：上传成功，服务器响应：" + decodedResponse;
+      })
+      .catch(error => {
+        console.error("上传失败：", error);
+        statusDiv.textContent = "状态：上传失败：" + error;
+      });
+    }
+
+    startBtn.addEventListener("click", startCollecting);
+    stopBtn.addEventListener("click", stopAndUpload);
+  </script>
+</body>
+</html>
