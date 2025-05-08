@@ -1,77 +1,25 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>服务器连接测试</title>
-    <style>
-        body {
-            font-family: sans-serif;
-            padding: 20px;
-        }
-        #output {
-            margin-top: 20px;
-            white-space: pre-wrap;
-            word-break: break-all;
-        }
-        button {
-            padding: 10px 20px;
-            font-size: 16px;
-        }
-    </style>
+    <title>简单连接测试</title>
 </head>
 <body>
-    <h1>服务器连接测试</h1>
-    <input type="text" id="serverAddress" placeholder="输入服务器地址" value="192.168.43.76:9999" style="width: 200px; padding: 5px;">
-    <button onclick="testConnection()">测试连接</button>
-    <button onclick="testPost()">测试POST请求</button>
-    <div id="output">等待测试...</div>
+    <h1>简单连接测试</h1>
+    <button onclick="test()">测试连接</button>
+    <pre id="result"></pre>
 
     <script>
-        const output = document.getElementById('output');
-        const serverAddress = document.getElementById('serverAddress');
-
-        function log(message) {
-            const time = new Date().toLocaleTimeString();
-            output.innerHTML += `\n[${time}] ${message}`;
-        }
-
-        async function testConnection() {
+        async function test() {
+            const result = document.getElementById('result');
+            result.textContent = '正在测试...';
+            
             try {
-                const address = serverAddress.value.trim();
-                log(`正在连接服务器: http://${address}/`);
-                
-                const response = await fetch(`http://${address}/`);
-                const text = await response.text();
-                
-                log(`服务器响应状态: ${response.status}`);
-                log(`服务器响应内容: ${text}`);
+                const response = await fetch('http://192.168.43.76:9999/');
+                const data = await response.json();
+                result.textContent = JSON.stringify(data, null, 2);
             } catch (error) {
-                log(`错误: ${error.message}`);
-            }
-        }
-
-        async function testPost() {
-            try {
-                const address = serverAddress.value.trim();
-                log(`正在发送POST请求: http://${address}/get_challenge`);
-                
-                const response = await fetch(`http://${address}/get_challenge`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        deviceName: 'test',
-                        deviceId: 'test123'
-                    })
-                });
-                
-                const text = await response.text();
-                log(`服务器响应状态: ${response.status}`);
-                log(`服务器响应内容: ${text}`);
-            } catch (error) {
-                log(`错误: ${error.message}`);
+                result.textContent = '错误: ' + error.message;
             }
         }
     </script>
