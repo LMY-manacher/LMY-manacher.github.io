@@ -41,14 +41,14 @@
             result.textContent = '正在连接...';
             
             try {
-                console.log('开始连接...');
                 const response = await fetch(`${serverAddress}/`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
                 const data = await response.json();
-                console.log('收到数据:', data);
                 result.textContent = `连接成功！\n服务器响应：${JSON.stringify(data, null, 2)}`;
             } catch (error) {
-                console.error('连接错误:', error);
-                result.textContent = `连接失败：${error.message}\n\n可能的原因：\n1. 服务器未启动\n2. 网络连接问题\n3. 防火墙阻止`;
+                result.textContent = `连接失败：${error.message}`;
             }
         }
     </script>
