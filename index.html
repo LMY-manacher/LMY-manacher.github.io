@@ -27,31 +27,28 @@
 </head>
 <body>
     <h1>简单通信测试</h1>
+    <div>
+        <label>服务器地址：</label>
+        <input type="text" id="serverAddress" value="https://5bc2-116-162-95-83.ngrok-free.app" style="width: 200px;">
+    </div>
     <button onclick="testConnection()">测试连接</button>
     <div id="result">等待测试...</div>
 
     <script>
         async function testConnection() {
             const result = document.getElementById('result');
+            const serverAddress = document.getElementById('serverAddress').value.trim();
             result.textContent = '正在连接...';
             
             try {
                 console.log('开始连接...');
-                const response = await fetch('https://6e5e-116-162-95-147.ngrok-free.app/', {
-                    method: 'GET',
-                    mode: 'cors'
-                });
-                
-                console.log('收到响应:', response.status);
-                console.log('响应头:', Object.fromEntries(response.headers.entries()));
-                
+                const response = await fetch(`http://${serverAddress}/`);
                 const data = await response.json();
-                console.log('解析数据:', data);
-                
+                console.log('收到数据:', data);
                 result.textContent = `连接成功！\n服务器响应：${JSON.stringify(data, null, 2)}`;
             } catch (error) {
                 console.error('连接错误:', error);
-                result.textContent = `连接失败：${error.message}\n\n可能的原因：\n1. 服务器未启动\n2. 网络连接问题\n3. 防火墙阻止\n4. ngrok 连接问题\n5. CORS 策略限制\n\n请检查浏览器控制台获取更多信息。`;
+                result.textContent = `连接失败：${error.message}\n\n可能的原因：\n1. 服务器未启动\n2. 网络连接问题\n3. 防火墙阻止`;
             }
         }
     </script>
