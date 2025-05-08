@@ -42,7 +42,7 @@
             
             try {
                 console.log('开始连接...');
-                const response = await fetch(`http://${serverAddress}/`);
+                const response = await fetch(`${serverAddress}/`);
                 const data = await response.json();
                 console.log('收到数据:', data);
                 result.textContent = `连接成功！\n服务器响应：${JSON.stringify(data, null, 2)}`;
