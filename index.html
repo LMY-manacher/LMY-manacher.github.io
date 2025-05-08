@@ -35,7 +35,7 @@
             result.textContent = '正在连接...';
             
             try {
-                const response = await fetch('http://192.168.43.76:5000/');
+                const response = await fetch('https://6e5e-116-162-95-147.ngrok-free.app:5000/');
                 const data = await response.json();
                 result.textContent = `连接成功！\n服务器响应：${JSON.stringify(data, null, 2)}`;
             } catch (error) {
