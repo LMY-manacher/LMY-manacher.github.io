@@ -3,458 +3,77 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>设备认证</title>
+    <title>服务器连接测试</title>
     <style>
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
+            font-family: sans-serif;
             padding: 20px;
-            background-color: #f5f5f5;
         }
-        .container {
-            background-color: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        .form-group {
-            margin-bottom: 15px;
-        }
-        label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-        }
-        input {
-            width: 100%;
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            box-sizing: border-box;
+        #output {
+            margin-top: 20px;
+            white-space: pre-wrap;
+            word-break: break-all;
         }
         button {
-            background-color: #007bff;
-            color: white;
             padding: 10px 20px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            width: 100%;
-        }
-        button:disabled {
-            background-color: #cccccc;
-        }
-        .status {
-            margin-top: 20px;
-            padding: 10px;
-            border-radius: 4px;
-            background-color: #f8f9fa;
-        }
-        .data-display {
-            display: flex;
-            gap: 10px;
-            margin-top: 15px;
-        }
-        .data-card {
-            flex: 1;
-            padding: 10px;
-            background-color: #f8f9fa;
-            border-radius: 4px;
-            text-align: center;
-        }
-        .progress-bar {
-            width: 100%;
-            height: 20px;
-            background-color: #e9ecef;
-            border-radius: 10px;
-            margin-top: 10px;
-            overflow: hidden;
-        }
-        .progress {
-            width: 0%;
-            height: 100%;
-            background-color: #28a745;
-            transition: width 0.3s ease;
+            font-size: 16px;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>设备认证</h1>
-        
-        <div class="form-group">
-            <label for="serverAddress">服务器地址：</label>
-            <input type="text" id="serverAddress" placeholder="192.168.43.76:5000" value="192.168.1.100:5000">
-        </div>
-
-        <div class="form-group">
-            <label for="deviceName">设备名称：</label>
-            <input type="text" id="deviceName" placeholder="请输入设备名称">
-        </div>
-        
-        <div class="form-group">
-            <label for="deviceId">设备ID：</label>
-            <input type="text" id="deviceId" placeholder="请输入设备ID">
-        </div>
-
-        <button id="startBtn">开始认证</button>
-        <button id="stopBtn" disabled>停止认证</button>
-
-        <div class="progress-bar">
-            <div id="progress" class="progress"></div>
-        </div>
-
-        <div class="status" id="status">状态：就绪</div>
-        
-        <div class="data-display">
-            <div class="data-card">
-                <div id="magX">X: -</div>
-                <div>磁力计 X</div>
-            </div>
-            <div class="data-card">
-                <div id="magY">Y: -</div>
-                <div>磁力计 Y</div>
-            </div>
-            <div class="data-card">
-                <div id="magZ">Z: -</div>
-                <div>磁力计 Z</div>
-            </div>
-        </div>
-
-        <div class="status" id="computeStatus">计算状态：未开始</div>
-    </div>
+    <h1>服务器连接测试</h1>
+    <input type="text" id="serverAddress" placeholder="输入服务器地址" value="192.168.43.76:5000" style="width: 200px; padding: 5px;">
+    <button onclick="testConnection()">测试连接</button>
+    <button onclick="testPost()">测试POST请求</button>
+    <div id="output">等待测试...</div>
 
     <script>
-        // DOM元素
-        const serverAddressInput = document.getElementById('serverAddress');
-        const deviceNameInput = document.getElementById('deviceName');
-        const deviceIdInput = document.getElementById('deviceId');
-        const startBtn = document.getElementById('startBtn');
-        const stopBtn = document.getElementById('stopBtn');
-        const progressBar = document.getElementById('progress');
-        const statusDiv = document.getElementById('status');
-        const computeStatus = document.getElementById('computeStatus');
-        const magXDisplay = document.getElementById('magX');
-        const magYDisplay = document.getElementById('magY');
-        const magZDisplay = document.getElementById('magZ');
+        const output = document.getElementById('output');
+        const serverAddress = document.getElementById('serverAddress');
 
-        // 全局变量
-        let isRunning = false;
-        let sensorData = [];
-        let computeWorker = null;
-        let magnetometer = null;
-        let startTime = 0;
-        let duration = 0;
-        let progressInterval = null;
-        let sequence = null;
+        function log(message) {
+            const time = new Date().toLocaleTimeString();
+            output.innerHTML += `\n[${time}] ${message}`;
+        }
 
-        // 请求传感器权限
-        async function requestSensorPermission() {
-            if ('Magnetometer' in window) {
-                try {
-                    magnetometer = new Magnetometer({ frequency: 10 });
-                    magnetometer.addEventListener('reading', () => {
-                        const timestamp = Date.now();
-                        const data = {
-                            time: timestamp,
-                            x: magnetometer.x,
-                            y: magnetometer.y,
-                            z: magnetometer.z
-                        };
-                        
-                        // 保存数据
-                        sensorData.push(data);
-                        
-                        // 更新显示
-                        magXDisplay.textContent = `X: ${magnetometer.x.toFixed(2)} µT`;
-                        magYDisplay.textContent = `Y: ${magnetometer.y.toFixed(2)} µT`;
-                        magZDisplay.textContent = `Z: ${magnetometer.z.toFixed(2)} µT`;
-                    });
-                    magnetometer.addEventListener('error', event => {
-                        statusDiv.textContent = `传感器错误：${event.error.name}`;
-                    });
-                    return true;
-                } catch (error) {
-                    console.error('传感器初始化失败:', error);
-                    alert('传感器初始化失败: ' + error.message);
-                    return false;
-                }
-            } else {
-                alert('当前浏览器不支持 Magnetometer API');
-                return false;
+        async function testConnection() {
+            try {
+                const address = serverAddress.value.trim();
+                log(`正在连接服务器: http://${address}/`);
+                
+                const response = await fetch(`http://${address}/`);
+                const text = await response.text();
+                
+                log(`服务器响应状态: ${response.status}`);
+                log(`服务器响应内容: ${text}`);
+            } catch (error) {
+                log(`错误: ${error.message}`);
             }
         }
 
-        // 从服务器获取挑战序列
-        async function getChallengeSequence() {
+        async function testPost() {
             try {
-                const serverAddress = serverAddressInput.value.trim();
-                if (!serverAddress) {
-                    throw new Error('请输入服务器地址');
-                }
-
-                // 先测试服务器连接
-                statusDiv.textContent = `状态：正在测试服务器连接...`;
-                console.log('测试服务器连接:', `http://${serverAddress}/`);
-                const testResponse = await fetch(`http://${serverAddress}/`);
-                if (!testResponse.ok) {
-                    throw new Error(`服务器连接测试失败: ${testResponse.status} ${testResponse.statusText}`);
-                }
-                const testData = await testResponse.json();
-                console.log('服务器连接测试成功:', testData);
-
-                statusDiv.textContent = `状态：正在获取挑战序列...`;
-                console.log('请求挑战序列:', `http://${serverAddress}/get_challenge`);
-                const response = await fetch(`http://${serverAddress}/get_challenge`, {
+                const address = serverAddress.value.trim();
+                log(`正在发送POST请求: http://${address}/get_challenge`);
+                
+                const response = await fetch(`http://${address}/get_challenge`, {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json'
+                        'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        deviceName: deviceNameInput.value,
-                        deviceId: deviceIdInput.value
+                        deviceName: 'test',
+                        deviceId: 'test123'
                     })
                 });
-
-                console.log('服务器响应状态:', response.status, response.statusText);
-                const responseText = await response.text();
-                console.log('服务器响应内容:', responseText);
-
-                if (!response.ok) {
-                    throw new Error(`服务器响应错误: ${response.status} ${response.statusText}\n${responseText}`);
-                }
-
-                const data = JSON.parse(responseText);
-                console.log('解析后的数据:', data);
-                return data.sequence;
+                
+                const text = await response.text();
+                log(`服务器响应状态: ${response.status}`);
+                log(`服务器响应内容: ${text}`);
             } catch (error) {
-                console.error('获取挑战序列失败:', error);
-                statusDiv.textContent = `状态：连接失败 - ${error.message}`;
-                throw error;
+                log(`错误: ${error.message}`);
             }
         }
-
-        // 创建计算Worker
-        function createComputeWorker() {
-            const workerCode = `
-                self.onmessage = function(e) {
-                    const { sequence, duration } = e.data;
-                    const startTime = Date.now();
-                    const endTime = startTime + (duration * 1000);
-                    let rounds = 0;
-                    
-                    while (Date.now() < endTime) {
-                        // 根据序列执行不同的计算任务
-                        for (let i = 0; i < sequence.length; i++) {
-                            const task = sequence[i];
-                            switch(task) {
-                                case 1:
-                                    // 大整数乘法
-                                    let result = BigInt(1);
-                                    for (let j = 0; j < 1000; j++) {
-                                        result *= BigInt(2);
-                                    }
-                                    break;
-                                case 2:
-                                    // 斐波那契数列
-                                    calculateFibonacci(30);
-                                    break;
-                                case 3:
-                                    // 质数检查
-                                    for (let j = 0; j < 1000; j++) {
-                                        isPrime(j);
-                                    }
-                                    break;
-                            }
-                        }
-                        rounds++;
-                        self.postMessage({ type: 'progress', rounds });
-                    }
-                    
-                    self.postMessage({ 
-                        type: 'complete', 
-                        rounds,
-                        timeElapsed: (Date.now() - startTime) / 1000
-                    });
-                };
-                
-                function calculateFibonacci(n) {
-                    if (n <= 1) return n;
-                    return calculateFibonacci(n-1) + calculateFibonacci(n-2);
-                }
-                
-                function isPrime(n) {
-                    if (n <= 1) return false;
-                    for (let i = 2; i <= Math.sqrt(n); i++) {
-                        if (n % i === 0) return false;
-                    }
-                    return true;
-                }
-            `;
-            
-            const blob = new Blob([workerCode], { type: 'application/javascript' });
-            return new Worker(URL.createObjectURL(blob));
-        }
-
-        // 开始采集传感器数据
-        function startSensorCollection() {
-            sensorData = [];
-            statusDiv.textContent = '状态：正在采集传感器数据...';
-            magnetometer.start();
-        }
-
-        // 启动CPU计算任务
-        function startCpuTask(sequence, durationSeconds) {
-            computeStatus.textContent = '计算状态：正在进行计算...';
-            
-            computeWorker = createComputeWorker();
-            computeWorker.postMessage({ sequence, duration: durationSeconds });
-            
-            computeWorker.onmessage = function(e) {
-                const data = e.data;
-                
-                if (data.type === 'progress') {
-                    computeStatus.textContent = `计算状态：已完成 ${data.rounds} 轮计算`;
-                } else if (data.type === 'complete') {
-                    computeStatus.textContent = `计算状态：计算完成! 总共执行了 ${data.rounds} 轮计算，耗时 ${data.timeElapsed.toFixed(2)} 秒`;
-                    stopTask();
-                }
-            };
-        }
-
-        // 更新进度条
-        function updateProgressBar() {
-            if (!isRunning) return;
-            
-            const now = Date.now();
-            const elapsed = (now - startTime) / 1000;
-            const percent = Math.min((elapsed / duration) * 100, 100);
-            
-            progressBar.style.width = `${percent}%`;
-            
-            if (percent >= 100) {
-                clearInterval(progressInterval);
-            }
-        }
-
-        // 发送数据到服务器
-        async function sendDataToServer() {
-            try {
-                const serverAddress = serverAddressInput.value.trim();
-                if (!serverAddress) {
-                    throw new Error('请输入服务器地址');
-                }
-
-                statusDiv.textContent = `状态：正在发送数据...`;
-                console.log('发送数据到:', `http://${serverAddress}/submit_data`);
-                const response = await fetch(`http://${serverAddress}/submit_data`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        deviceName: deviceNameInput.value,
-                        deviceId: deviceIdInput.value,
-                        sensorData: sensorData,
-                        sequence: sequence
-                    })
-                });
-
-                console.log('服务器响应状态:', response.status, response.statusText);
-                const responseText = await response.text();
-                console.log('服务器响应内容:', responseText);
-
-                if (!response.ok) {
-                    throw new Error(`服务器响应错误: ${response.status} ${response.statusText}\n${responseText}`);
-                }
-
-                const result = JSON.parse(responseText);
-                console.log('解析后的数据:', result);
-                statusDiv.textContent = `状态：认证完成 - ${result.message}`;
-            } catch (error) {
-                console.error('发送数据失败:', error);
-                statusDiv.textContent = `状态：发送数据失败 - ${error.message}`;
-            }
-        }
-
-        // 停止任务
-        async function stopTask() {
-            if (!isRunning) return;
-            
-            isRunning = false;
-            startBtn.disabled = false;
-            stopBtn.disabled = true;
-            
-            clearInterval(progressInterval);
-            progressBar.style.width = '100%';
-            
-            if (computeWorker) {
-                computeWorker.terminate();
-                computeWorker = null;
-            }
-            
-            if (magnetometer) {
-                magnetometer.stop();
-                magnetometer = null;
-            }
-            
-            statusDiv.textContent = '状态：正在发送数据...';
-            await sendDataToServer();
-        }
-
-        // 开始任务
-        startBtn.addEventListener('click', async function() {
-            const deviceName = deviceNameInput.value.trim();
-            const deviceId = deviceIdInput.value.trim();
-            
-            if (!deviceName || !deviceId) {
-                alert('请填写设备名称和设备ID');
-                return;
-            }
-            
-            try {
-                // 请求传感器权限
-                const permissionGranted = await requestSensorPermission();
-                if (!permissionGranted) return;
-                
-                // 获取挑战序列
-                statusDiv.textContent = '状态：正在获取挑战序列...';
-                sequence = await getChallengeSequence();
-                
-                // 开始任务
-                isRunning = true;
-                startBtn.disabled = true;
-                stopBtn.disabled = false;
-                startTime = Date.now();
-                duration = 30; // 30秒
-                
-                progressBar.style.width = '0%';
-                progressInterval = setInterval(updateProgressBar, 100);
-                
-                // 开始传感器数据采集
-                startSensorCollection();
-                
-                // 开始CPU计算
-                startCpuTask(sequence, duration);
-                
-                // 设置自动停止
-                setTimeout(() => {
-                    if (isRunning) {
-                        stopTask();
-                    }
-                }, duration * 1000);
-                
-            } catch (error) {
-                console.error('启动任务失败:', error);
-                statusDiv.textContent = '状态：启动失败 - ' + error.message;
-                startBtn.disabled = false;
-            }
-        });
-
-        stopBtn.addEventListener('click', stopTask);
     </script>
 </body>
 </html> 
