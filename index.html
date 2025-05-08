@@ -2,51 +2,44 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>简单连接测试</title>
+    <title>简单通信测试</title>
     <style>
-        body { font-family: sans-serif; padding: 20px; }
-        pre { white-space: pre-wrap; word-break: break-all; }
-        .error { color: red; }
-        .success { color: green; }
+        body {
+            font-family: sans-serif;
+            padding: 20px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            margin: 10px 0;
+        }
+        #result {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            min-height: 100px;
+        }
     </style>
 </head>
 <body>
-    <h1>简单连接测试</h1>
-    <div>
-        <label>服务器地址：</label>
-        <input type="text" id="serverAddress" value="10.69.255.65" style="width: 200px;">
-    </div>
-    <button onclick="test()">测试连接</button>
-    <pre id="result"></pre>
+    <h1>简单通信测试</h1>
+    <button onclick="testConnection()">测试连接</button>
+    <div id="result">等待测试...</div>
 
     <script>
-        async function test() {
+        async function testConnection() {
             const result = document.getElementById('result');
-            const serverAddress = document.getElementById('serverAddress').value.trim();
-            result.textContent = '正在测试...';
+            result.textContent = '正在连接...';
             
             try {
-                console.log(`尝试连接到: http://${serverAddress}/`);
-                const response = await fetch(`http://${serverAddress}/`, {
-                    method: 'GET',
-                    headers: {
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json'
-                    },
-                    mode: 'cors',
-                    credentials: 'omit'
-                });
-                
-                console.log('响应状态:', response.status);
-                console.log('响应头:', Object.fromEntries(response.headers.entries()));
-                
+                const response = await fetch('http://10.69.255.65:5000/');
                 const data = await response.json();
-                console.log('响应数据:', data);
-                
-                result.innerHTML = `<span class="success">连接成功！</span>\n\n服务器响应：\n${JSON.stringify(data, null, 2)}`;
+                result.textContent = `连接成功！\n服务器响应：${JSON.stringify(data, null, 2)}`;
             } catch (error) {
-                console.error('连接错误:', error);
-                result.innerHTML = `<span class="error">错误: ${error.message}</span>\n\n可能的原因：\n1. 服务器未启动\n2. 网络连接问题\n3. 防火墙阻止\n4. 端口被占用\n5. CORS策略限制\n\n请检查浏览器控制台获取更多信息。`;
+                result.textContent = `连接失败：${error.message}\n\n可能的原因：\n1. 服务器未启动\n2. 网络连接问题\n3. 防火墙阻止`;
             }
         }
     </script>
