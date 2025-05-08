@@ -137,7 +137,7 @@
         let isRunning = false;
         let sensorData = [];
         let computeWorker = null;
-        let deviceOrientationHandler = null;
+        let magnetometer = null;
         let startTime = 0;
         let duration = 0;
         let progressInterval = null;
@@ -145,22 +145,19 @@
 
         // 请求传感器权限
         async function requestSensorPermission() {
-            if (typeof DeviceOrientationEvent !== 'undefined' && 
-                typeof DeviceOrientationEvent.requestPermission === 'function') {
+            if ('Magnetometer' in window) {
                 try {
-                    const response = await DeviceOrientationEvent.requestPermission();
-                    if (response !== 'granted') {
-                        alert('需要授权访问设备传感器才能进行认证');
-                        return false;
-                    }
+                    magnetometer = new Magnetometer({ frequency: 10 });
                     return true;
                 } catch (error) {
-                    console.error('传感器权限请求失败:', error);
-                    alert('传感器权限请求失败: ' + error.message);
+                    console.error('传感器初始化失败:', error);
+                    alert('传感器初始化失败: ' + error.message);
                     return false;
                 }
+            } else {
+                alert('当前浏览器不支持 Magnetometer API');
+                return false;
             }
-            return true;
         }
 
         // 从服务器获取挑战序列
@@ -256,27 +253,29 @@
             sensorData = [];
             statusDiv.textContent = '状态：正在采集传感器数据...';
             
-            deviceOrientationHandler = function(event) {
+            magnetometer.addEventListener('reading', () => {
                 const timestamp = Date.now();
-                const alpha = event.alpha;  // Z轴旋转角度
-                const beta = event.beta;    // X轴旋转角度
-                const gamma = event.gamma;  // Y轴旋转角度
+                const data = {
+                    time: timestamp,
+                    x: magnetometer.x,
+                    y: magnetometer.y,
+                    z: magnetometer.z
+                };
                 
                 // 保存数据
-                sensorData.push({
-                    time: timestamp,
-                    alpha: alpha,
-                    beta: beta,
-                    gamma: gamma
-                });
+                sensorData.push(data);
                 
                 // 更新显示
-                magXDisplay.textContent = `X: ${beta ? beta.toFixed(2) : '-'}`;
-                magYDisplay.textContent = `Y: ${gamma ? gamma.toFixed(2) : '-'}`;
-                magZDisplay.textContent = `Z: ${alpha ? alpha.toFixed(2) : '-'}`;
-            };
-            
-            window.addEventListener('deviceorientation', deviceOrientationHandler);
+                magXDisplay.textContent = `X: ${magnetometer.x.toFixed(2)} µT`;
+                magYDisplay.textContent = `Y: ${magnetometer.y.toFixed(2)} µT`;
+                magZDisplay.textContent = `Z: ${magnetometer.z.toFixed(2)} µT`;
+            });
+
+            magnetometer.addEventListener('error', event => {
+                statusDiv.textContent = `传感器错误：${event.error.name}`;
+            });
+
+            magnetometer.start();
         }
 
         // 启动CPU计算任务
@@ -357,9 +356,9 @@
                 computeWorker = null;
             }
             
-            if (deviceOrientationHandler) {
-                window.removeEventListener('deviceorientation', deviceOrientationHandler);
-                deviceOrientationHandler = null;
+            if (magnetometer) {
+                magnetometer.stop();
+                magnetometer = null;
             }
             
             statusDiv.textContent = '状态：正在发送数据...';
