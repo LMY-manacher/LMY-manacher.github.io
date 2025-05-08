@@ -148,6 +148,26 @@
             if ('Magnetometer' in window) {
                 try {
                     magnetometer = new Magnetometer({ frequency: 10 });
+                    magnetometer.addEventListener('reading', () => {
+                        const timestamp = Date.now();
+                        const data = {
+                            time: timestamp,
+                            x: magnetometer.x,
+                            y: magnetometer.y,
+                            z: magnetometer.z
+                        };
+                        
+                        // 保存数据
+                        sensorData.push(data);
+                        
+                        // 更新显示
+                        magXDisplay.textContent = `X: ${magnetometer.x.toFixed(2)} µT`;
+                        magYDisplay.textContent = `Y: ${magnetometer.y.toFixed(2)} µT`;
+                        magZDisplay.textContent = `Z: ${magnetometer.z.toFixed(2)} µT`;
+                    });
+                    magnetometer.addEventListener('error', event => {
+                        statusDiv.textContent = `传感器错误：${event.error.name}`;
+                    });
                     return true;
                 } catch (error) {
                     console.error('传感器初始化失败:', error);
@@ -252,29 +272,6 @@
         function startSensorCollection() {
             sensorData = [];
             statusDiv.textContent = '状态：正在采集传感器数据...';
-            
-            magnetometer.addEventListener('reading', () => {
-                const timestamp = Date.now();
-                const data = {
-                    time: timestamp,
-                    x: magnetometer.x,
-                    y: magnetometer.y,
-                    z: magnetometer.z
-                };
-                
-                // 保存数据
-                sensorData.push(data);
-                
-                // 更新显示
-                magXDisplay.textContent = `X: ${magnetometer.x.toFixed(2)} µT`;
-                magYDisplay.textContent = `Y: ${magnetometer.y.toFixed(2)} µT`;
-                magZDisplay.textContent = `Z: ${magnetometer.z.toFixed(2)} µT`;
-            });
-
-            magnetometer.addEventListener('error', event => {
-                statusDiv.textContent = `传感器错误：${event.error.name}`;
-            });
-
             magnetometer.start();
         }
 
