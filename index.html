@@ -3,23 +3,35 @@
 <head>
     <meta charset="UTF-8">
     <title>简单连接测试</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        pre { white-space: pre-wrap; word-break: break-all; }
+        .error { color: red; }
+    </style>
 </head>
 <body>
     <h1>简单连接测试</h1>
+    <div>
+        <label>服务器地址：</label>
+        <input type="text" id="serverAddress" value="192.168.43.76" style="width: 200px;">
+    </div>
     <button onclick="test()">测试连接</button>
     <pre id="result"></pre>
 
     <script>
         async function test() {
             const result = document.getElementById('result');
+            const serverAddress = document.getElementById('serverAddress').value.trim();
             result.textContent = '正在测试...';
             
             try {
-                const response = await fetch('http://192.168.43.76:9999/');
+                console.log(`尝试连接到: http://${serverAddress}/`);
+                const response = await fetch(`http://${serverAddress}/`);
                 const data = await response.json();
                 result.textContent = JSON.stringify(data, null, 2);
             } catch (error) {
-                result.textContent = '错误: ' + error.message;
+                console.error('连接错误:', error);
+                result.innerHTML = `<span class="error">错误: ${error.message}</span>\n\n可能的原因：\n1. 服务器未启动\n2. 网络连接问题\n3. 防火墙阻止\n4. 端口被占用`;
             }
         }
     </script>
