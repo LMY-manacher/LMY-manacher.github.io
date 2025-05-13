@@ -23,31 +23,96 @@
             min-height: 100px;
             white-space: pre-wrap;
         }
+        .warning {
+            color: #856404;
+            background-color: #fff3cd;
+            border: 1px solid #ffeeba;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .success {
+            color: #155724;
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .error {
+            color: #721c24;
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
     </style>
 </head>
 <body>
     <h1>简单通信测试</h1>
+    <div class="warning">
+        <p>使用说明：</p>
+        <ol>
+            <li>确保服务器正在运行（python simple_server.py）</li>
+            <li>确保 ngrok 正在运行（ngrok http 5000）</li>
+            <li>将 ngrok 显示的地址复制到下面的输入框中</li>
+            <li>点击测试按钮</li>
+        </ol>
+    </div>
     <div>
         <label>服务器地址：</label>
-        <input type="text" id="serverAddress" value="https://1171-116-162-95-23.ngrok-free.app" style="width: 200px;">
+        <input type="text" id="serverAddress" placeholder="输入ngrok地址" style="width: 300px;">
     </div>
-    <button onclick="testConnection()">测试连接</button>
+    <div>
+        <button onclick="testConnection('/')">测试根路径</button>
+        <button onclick="testConnection('/test')">测试/test路径</button>
+    </div>
     <div id="result">等待测试...</div>
 
     <script>
-        async function testConnection() {
+        async function testConnection(path) {
             const result = document.getElementById('result');
             const serverAddress = document.getElementById('serverAddress').value.trim();
+            
+            if (!serverAddress) {
+                result.className = 'error';
+                result.textContent = '请先输入服务器地址！';
+                return;
+            }
+            
             result.textContent = '正在连接...';
+            result.className = '';
             
             try {
-                const response = await fetch(`${serverAddress}/`);
+                const response = await fetch(`${serverAddress}${path}`);
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
-                const data = await response.json();
-                result.textContent = `连接成功！\n服务器响应：${JSON.stringify(data, null, 2)}`;
+                const text = await response.text();
+                try {
+                    const data = JSON.parse(text);
+                    result.className = 'success';
+                    result.innerHTML = `
+                        <div style="font-weight: bold; margin-bottom: 10px;">✅ 连接成功！</div>
+                        <div>服务器响应：</div>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                } catch (e) {
+                    if (text.includes('ngrok')) {
+                        result.className = 'warning';
+                        result.innerHTML = `
+                            <div style="font-weight: bold; margin-bottom: 10px;">⚠️ 需要确认信任</div>
+                            <p>请先访问以下地址并点击确认信任：</p>
+                            <a href="${serverAddress}" target="_blank">${serverAddress}</a>
+                        `;
+                    } else {
+                        result.className = 'error';
+                        result.textContent = `服务器返回的不是JSON格式：\n${text}`;
+                    }
+                }
             } catch (error) {
+                result.className = 'error';
                 result.textContent = `连接失败：${error.message}`;
             }
         }
