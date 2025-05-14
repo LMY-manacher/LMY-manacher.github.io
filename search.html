@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>搜索引擎</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 0;
+      padding: 1em;
+      background: #f2f2f2;
+    }
+    .search-box {
+      display: flex;
+      margin-bottom: 1em;
+    }
+    input[type="text"] {
+      flex: 1;
+      padding: 0.5em;
+      font-size: 1em;
+    }
+    .results {
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .result {
+      padding: 1em;
+      border-bottom: 1px solid #ddd;
+    }
+    .result:last-child {
+      border-bottom: none;
+    }
+    .result a {
+      text-decoration: none;
+      color: #1a0dab;
+      font-weight: bold;
+    }
+    .result span {
+      display: block;
+      color: #545454;
+      margin-top: 0.2em;
+    }
+  </style>
+</head>
+<body>
+  <div class="search-box">
+    <input type="text" value="领导宝马" readonly />
+  </div>
+
+  <div class="results">
+    <div class="result">
+      <a href="news.html">震惊！某地领导开宝马被路人认出，真相竟是……</a>
+      <span>www.fake-news.cn › news</span>
+    </div>
+    <div class="result">
+      <span>如何辨别真假领导座驾？五个细节告诉你</span>
+      <span>www.suspicious.cn › guide</span>
+    </div>
+    <div class="result">
+      <span>警方通报：网络谣言切勿轻信</span>
+      <span>www.safeinfo.cn › alert</span>
+    </div>
+  </div>
+</body>
+</html>
