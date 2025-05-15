@@ -26,9 +26,9 @@ export class MagnetometerMonitor {
                     const timestamp = Date.now() - this.startTime;
                     const data = {
                         timestamp: timestamp,
-                        x: this.sensor.x.toFixed(2),
-                        y: this.sensor.y.toFixed(2),
-                        z: this.sensor.z.toFixed(2)
+                        x: this.sensor.x.toFixed(6),
+                        y: this.sensor.y.toFixed(6),
+                        z: this.sensor.z.toFixed(6)
                     };
                     
                     // 只在记录状态下保存数据
