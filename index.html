@@ -1,113 +1,51 @@
-<!-- index.html -->
 <!DOCTYPE html>
-<html lang="zh">
+<html lang="zh-CN">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>BD搜索</title>
-  <style>
-    body {
-      margin: 0;
-      padding: 0;
-      font-family: sans-serif;
-      background: #fff;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: start;
-      min-height: 100vh;
-    }
-    .search-container {
-      display: flex;
-      align-items: center;
-      border: 1px solid #ccc;
-      border-radius: 20px;
-      overflow: hidden;
-      width: 90%;
-      max-width: 500px;
-      margin-top: 20vh;
-    }
-    .label {
-      padding: 0.5em 1em;
-      background: #f2f2f2;
-      font-weight: bold;
-    }
-    input[type="text"] {
-      flex: 1;
-      padding: 0.5em;
-      border: none;
-      outline: none;
-      font-size: 1em;
-    }
-    button {
-      padding: 0.5em 1em;
-      background-color: #3385ff;
-      color: white;
-      border: none;
-      cursor: pointer;
-    }
-    .results {
-      display: none;
-      margin-top: 2em;
-      width: 90%;
-      max-width: 600px;
-    }
-    .result-item {
-      padding: 1em;
-      border-bottom: 1px solid #eee;
-    }
-    .result-item:hover {
-      background-color: #f9f9f9;
-    }
-    .result-title {
-      color: #1a0dab;
-      font-size: 1.1em;
-      font-weight: bold;
-      text-decoration: none;
-    }
-    .result-url {
-      font-size: 0.85em;
-      color: #006621;
-      margin: 0.2em 0;
-    }
-    .result-desc {
-      font-size: 0.95em;
-      color: #545454;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CPU测试与磁传感器监测</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="search-container">
-    <div class="label">BD搜索</div>
-    <input type="text" id="searchInput" placeholder="请输入关键词" />
-    <button onclick="performSearch()">搜索</button>
-  </div>
+    <div class="container">
+        <h1>CPU测试与磁传感器监测</h1>
+        
+        <div class="section">
+            <h2>CPU测试</h2>
+            <div class="controls">
+                <label>服务器地址：<input id="serverAddress" type="text" placeholder="http://your-server" style="width:300px;"></label>
+                <br>
+                <button id="startBtn">开始CPU测试</button>
+                <button id="stopBtn" disabled>停止CPU测试</button>
+            </div>
+            <div class="status" id="status">就绪</div>
+            <div class="progress">
+                <div class="progress-bar" id="progressBar"></div>
+            </div>
+        </div>
 
-  <div class="results" id="results">
-    <div class="result-item" onclick="window.location.href='news.html'">
-      <a class="result-title" href="#">高校领导新提宝马一辆，懂得都懂……</a>
-      <div class="result-url">www.fake-news.cn/news</div>
-      <div class="result-desc">近日，有市民在街头偶遇某地官员驾驶宝马，引发热议。据悉事件背后另有隐情……</div>
+        <div class="section">
+            <h2>磁传感器数据</h2>
+            <div class="controls">
+                <button id="startSensorBtn">开始监测</button>
+                <button id="stopSensorBtn" disabled>停止监测</button>
+            </div>
+            <div class="sensor-data" id="sensorOutput">
+                <div id="currentData">尚未读取数据</div>
+                <table class="data-table" id="dataTable" style="display: none;">
+                    <thead>
+                        <tr>
+                            <th>时间(ms)</th>
+                            <th>X(µT)</th>
+                            <th>Y(µT)</th>
+                            <th>Z(µT)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="dataBody"></tbody>
+                </table>
+            </div>
+        </div>
     </div>
-    <div class="result-item">
-      <a class="result-title" href="#">如何辨别真假领导座驾？五个细节教你识别</a>
-      <div class="result-url">www.autotips.cn/articles/12345</div>
-      <div class="result-desc">真假官车傻傻分不清？专家告诉你从车牌号、随行车辆、司机行为等五方面着手识别！</div>
-    </div>
-    <div class="result-item">
-      <a class="result-title" href="#">警方通报：网络谣言切勿轻信，已有多人受骗</a>
-      <div class="result-url">www.public-safety.gov.cn/warning</div>
-      <div class="result-desc">官方发声：近期“领导宝马”事件为谣言，提醒广大网民保持警惕，勿被诈骗团伙利用。</div>
-    </div>
-  </div>
-
-  <script>
-    function performSearch() {
-      const input = document.getElementById('searchInput').value.trim();
-      if (input === '领导宝马') {
-        document.getElementById('results').style.display = 'block';
-      }
-    }
-  </script>
+    <script type="module" src="main.js"></script>
 </body>
-</html>
+</html> 

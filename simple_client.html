@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>获取序列并上传CSV</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            padding: 20px;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        #result {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            min-height: 100px;
+            white-space: pre-wrap;
+        }
+        .warning {
+            color: #856404;
+            background-color: #fff3cd;
+            border: 1px solid #ffeeba;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .success {
+            color: #155724;
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .error {
+            color: #721c24;
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>获取序列并上传 CSV</h1>
+
+    <div class="warning">
+        <p>使用说明：</p>
+        <ol>
+            <li>确保服务器正在运行（如：<code>python simple_server.py</code>）</li>
+            <li>确保 ngrok 正在运行（如：<code>ngrok http 5000</code>）</li>
+            <li>将 ngrok 显示的地址复制到下面，例如：<code>https://xxxxx.ngrok-free.app</code></li>
+            <li>点击按钮：获取序列 → 生成并上传 CSV</li>
+        </ol>
+    </div>
+
+    <div>
+        <label>服务器地址：</label>
+        <input type="text" id="serverAddress" placeholder="输入 ngrok 地址" style="width: 400px;">
+    </div>
+
+    <div style="margin-top: 10px;">
+        <button onclick="fetchSequence()">获取序列并生成 CSV</button>
+        <button onclick="uploadCSV()">上传 CSV 文件到服务器</button>
+    </div>
+
+    <div id="result">等待操作...</div>
+
+    <script>
+        let latestSequence = [];
+        let csvBlob = null;
+
+        async function fetchSequence() {
+            const result = document.getElementById('result');
+            const serverAddress = document.getElementById('serverAddress').value.trim();
+
+            if (!serverAddress) {
+                result.className = 'error';
+                result.textContent = '请先输入服务器地址！';
+                return;
+            }
+
+            result.className = '';
+            result.textContent = '正在请求序列...';
+
+            try {
+                const response = await fetch(`${serverAddress}/sequence`, {
+                    headers: {
+                        'ngrok-skip-browser-warning': 'true'
+                    }
+                });
+                const data = await response.json();
+
+                if (data.status === 'success' && Array.isArray(data.sequence)) {
+                    latestSequence = data.sequence;
+                    generateCSV(latestSequence);
+
+                    result.className = 'success';
+                    result.innerHTML = `
+                        已获取序列并生成 CSV 文件：<br>
+                        <pre>${JSON.stringify(latestSequence, null, 2)}</pre>
+                    `;
+                } else {
+                    throw new Error('服务器未返回合法序列');
+                }
+            } catch (error) {
+                result.className = 'error';
+                result.textContent = `获取序列失败：${error.message}`;
+            }
+        }
+
+        function generateCSV(sequence) {
+            const header = 'index,value\n';
+            const rows = sequence.map((value, index) => `${index},${value}`).join('\n');
+            const csvContent = header + rows;
+            csvBlob = new Blob([csvContent], { type: 'text/csv' });
+            console.log('CSV 文件已生成');
+        }
+
+        async function uploadCSV() {
+            const result = document.getElementById('result');
+            const serverAddress = document.getElementById('serverAddress').value.trim();
+
+            if (!serverAddress) {
+                result.className = 'error';
+                result.textContent = '请先输入服务器地址！';
+                return;
+            }
+
+            if (!csvBlob) {
+                result.className = 'error';
+                result.textContent = '尚未生成 CSV 文件，请先点击"获取序列并生成 CSV"';
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', csvBlob, 'sequence.csv');
+
+            try {
+                const response = await fetch(`${serverAddress}/upload`, {
+                    method: 'POST',
+                    headers: {
+                        'ngrok-skip-browser-warning': 'true'
+                    },
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    result.className = 'success';
+                    result.textContent = 'CSV 文件上传成功！服务器已保存。';
+                } else {
+                    throw new Error(data.message || '未知错误');
+                }
+            } catch (error) {
+                result.className = 'error';
+                result.textContent = `上传失败：${error.message}`;
+            }
+        }
+    </script>
+</body>
+</html>
