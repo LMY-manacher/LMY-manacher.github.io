@@ -16,7 +16,7 @@ export class MagnetometerMonitor {
         
         if ('Magnetometer' in window) {
             try {
-                this.sensor = new Magnetometer({ frequency: 10 });
+                this.sensor = new Magnetometer({ frequency: 100 });
                 this.startTime = Date.now();
                 this.sensorData = [];
                 this.dataBody.innerHTML = '';
