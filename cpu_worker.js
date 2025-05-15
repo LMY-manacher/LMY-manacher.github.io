@@ -38,6 +38,7 @@ function performOperation(operation) {
             return sqrt;
         case 5:
             // 空等操作
+            await sleep(20);
             return 0;
     }
 }
